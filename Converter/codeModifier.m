@@ -130,6 +130,14 @@ for x = 1:size_of_input(1,1)%For loop runs through the whole array
                 %function exploits matlab's auto align feature to tweak
                 %code.
                 
+                size_of_if_locator_2 = size(if_locator_2);
+                
+                if size_of_if_locator_2(1,2) > 1
+                    
+                    if_locator_2 = if_locator_2(1,1);
+                    
+                end 
+                
                 for y = x:size_of_input(1,1)%a for loop goes through the 
                     %array to find a matching 'end' statement which has the
                     %same alignment in the row and position. Once it has
@@ -216,6 +224,14 @@ for x = 1:size_of_input(1,1)
                 
                 for_locator_2 = strfind(commentlessString(replacement_string_1),'for');
                 
+                size_of_for_locator_2 = size(for_locator_2);
+                
+                if size_of_for_locator_2(1,2) > 1
+                    
+                    for_locator_2 = for_locator_2(1,1);
+                    
+                end 
+                
                 for y = x:size_of_input(1,1)
                     
                     current_row_2 = input_string_cell_array{y,1};
@@ -292,6 +308,14 @@ for x = 1:size_of_input(1,1)
             if strcmp(token,'while')
                 
                 while_locator_2 = strfind(commentlessString(replacement_string_1),'while');
+                                 
+                size_of_while_locator_2 = size(while_locator_2);
+                
+                if size_of_while_locator_2(1,2) > 1
+                    
+                    while_locator_2 = while_locator_2(1,1);
+                    
+                end
                 
                 for y = x:size_of_input(1,1)
                     
@@ -370,6 +394,14 @@ for x = 1:size_of_input(1,1)
             if strcmp(token,'switch')
                 
                 switch_locator_2 = strfind(commentlessString(replacement_string_1),'switch');
+               
+                size_of_switch_locator_2 = size(switch_locator_2);
+                
+                if size_of_switch_locator_2(1,2) > 1
+                    
+                    switch_locator_2 = switch_locator_2(1,1);
+                    
+                end
                 
                 for y = x:size_of_input(1,1)
                     
@@ -461,83 +493,83 @@ for x = 1:size_of_input(1,1)
     
 end
 
-function input_string_cell_array = functionSyntaxModifier(input_string_cell_array)
-
-size_of_input = size(input_string_cell_array);
-
-for x = 1:size_of_input(1,1)
-    
-    current_row = input_string_cell_array{x,1};
-    
-    replacement_string_1 = input_string_cell_array{x,1};
-    
-    current_row = strtrim(current_row);
-    
-    if isWholeLineComment(current_row) == 0
-        
-        current_row = commentlessString(current_row);
-        
-        function_locator = strfind(current_row,'function');
-        
-        
-        if isempty(function_locator) == 0
-            
-            [token,remain] = strtok(current_row);
-            
-            if strcmp(token,'function')
-                
-                function_locator_2 = strfind(commentlessString(replacement_string_1),'function');
-                
-                for y = x:size_of_input(1,1)
-                    
-                    current_row_2 = input_string_cell_array{y,1};
-                    
-                    replacement_string_2 = input_string_cell_array{y,1};
-                    
-                    current_row_2 = strtrim(current_row_2);
-                    
-                    if isWholeLineComment(current_row) == 0
-                        
-                        current_row_2 = commentlessString(current_row_2);
-                        
-                        end_locator = strfind(current_row_2,'end');
-                        
-                        if isempty(end_locator) == 0
-                            
-                            if strcmp(current_row_2,'end')
-                                
-                                end_locator_2 = strfind(commentlessString(replacement_string_2),'end');
-                                
-                                if function_locator_2 == end_locator_2
-                                    
-                                    replacement_string_2 = [replacement_string_2 'function'];
-                                    
-                                    input_string_cell_array{y,1} = replacement_string_2;
-                                    
-                                    break
-                                    
-                                end
-                                
-                            end
-                            
-                        end
-                        
-                    end
-                    
-                end
-                
-                
-            end
-            
-            
-            
-        end
-        
-        
-    end
-    
-end
-
+% function input_string_cell_array = functionSyntaxModifier(input_string_cell_array)
+% 
+% size_of_input = size(input_string_cell_array);
+% 
+% for x = 1:size_of_input(1,1)
+%     
+%     current_row = input_string_cell_array{x,1};
+%     
+%     replacement_string_1 = input_string_cell_array{x,1};
+%     
+%     current_row = strtrim(current_row);
+%     
+%     if isWholeLineComment(current_row) == 0
+%         
+%         current_row = commentlessString(current_row);
+%         
+%         function_locator = strfind(current_row,'function');
+%         
+%         
+%         if isempty(function_locator) == 0
+%             
+%             [token,remain] = strtok(current_row);
+%             
+%             if strcmp(token,'function')
+%                 
+%                 function_locator_2 = strfind(commentlessString(replacement_string_1),'function');
+%                 
+%                 for y = x:size_of_input(1,1)
+%                     
+%                     current_row_2 = input_string_cell_array{y,1};
+%                     
+%                     replacement_string_2 = input_string_cell_array{y,1};
+%                     
+%                     current_row_2 = strtrim(current_row_2);
+%                     
+%                     if isWholeLineComment(current_row) == 0
+%                         
+%                         current_row_2 = commentlessString(current_row_2);
+%                         
+%                         end_locator = strfind(current_row_2,'end');
+%                         
+%                         if isempty(end_locator) == 0
+%                             
+%                             if strcmp(current_row_2,'end')
+%                                 
+%                                 end_locator_2 = strfind(commentlessString(replacement_string_2),'end');
+%                                 
+%                                 if function_locator_2 == end_locator_2
+%                                     
+%                                     replacement_string_2 = [replacement_string_2 'function'];
+%                                     
+%                                     input_string_cell_array{y,1} = replacement_string_2;
+%                                     
+%                                     break
+%                                     
+%                                 end
+%                                 
+%                             end
+%                             
+%                         end
+%                         
+%                     end
+%                     
+%                 end
+%                 
+%                 
+%             end
+%             
+%             
+%             
+%         end
+%         
+%         
+%     end
+%     
+% end
+% 
 
 
 %removeTrailingWhiteSpace function is self explanatory.
