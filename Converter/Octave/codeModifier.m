@@ -464,6 +464,8 @@ size_of_input = size(input_string_cell_array);
 
 function_counter = 0;
 
+function_location = [];
+
 for x = 1:size_of_input(1,1)
 
     current_row = input_string_cell_array{x,1};

@@ -120,9 +120,13 @@ if size_of_varargin(1,2) == 1%If there is only one input, then the function
 
     [modified_code_array,function_counter,location_of_functions_in_array] = codeModifier(matlab_file_as_array);
 
-    modified_code_array = functionEnder(modified_code_array,location_of_functions_in_array,function_counter);
+    if function_counter ~= 0
 
-    modified_code_array = functionNameModifier(modified_code_array,matlab_function_name,location_of_functions_in_array);
+        modified_code_array = functionEnder(modified_code_array,location_of_functions_in_array,function_counter);
+
+        modified_code_array = functionNameModifier(modified_code_array,matlab_function_name,location_of_functions_in_array);
+
+    endif
 
     size_of_modified_code_array = size(modified_code_array);
     %Size of the modified compatible octave code is needed to set up the
@@ -173,7 +177,11 @@ elseif size_of_varargin(1,2) == 2
 
         [modified_code_array,function_counter,location_of_functions_in_array] = codeModifier(matlab_file_as_array);
 
-        modified_code_array = functionEnder(modified_code_array,location_of_functions_in_array,function_counter);
+        if function_counter ~= 0
+
+            modified_code_array = functionEnder(modified_code_array,location_of_functions_in_array,function_counter);
+
+        endif
 
         size_of_modified_code_array = size(modified_code_array);
         %Size of the modified compatible octave code is needed to set up the
@@ -344,13 +352,13 @@ file_id = fopen(path_to_file);
 
 file_as_line_by_line_array = {};
 
-individual_line = fgetl(file_id);
+individual_line = fgets(file_id);
 
 file_as_line_by_line_array = [file_as_line_by_line_array ; individual_line];
 
 while ischar(individual_line)
 
-    individual_line = fgetl(file_id);
+    individual_line = fgets(file_id);
     file_as_line_by_line_array = [file_as_line_by_line_array ;individual_line];
 
 endwhile
@@ -358,6 +366,20 @@ endwhile
 fclose(file_id);
 
 file_as_line_by_line_array(end) = [];
+
+end_of_file = file_as_line_by_line_array{end};
+
+size_of_end_of_file = size(end_of_file);
+
+while size_of_end_of_file(1,2) == 2
+
+    file_as_line_by_line_array(end) = [];
+
+    end_of_file = file_as_line_by_line_array{end};
+
+    size_of_end_of_file = size(end_of_file);
+
+endwhile
 
 output = file_as_line_by_line_array;
 endfunction

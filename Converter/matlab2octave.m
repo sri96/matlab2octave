@@ -31,7 +31,7 @@ if size_of_varargin(1,2) == 1
     
     input_path = varargin{1};
     
-    is_m_file = strfind(input_path,'.m');%If an empty matrix is returned 
+    is_m_file = strfind(input_path,'.m');%If an empty matrix is returned
     %from this call, we can definitely say that it is a folder full of .m
     %files. If it returns a number we can say that it is a single file
     %which needs to be converted.
@@ -53,18 +53,18 @@ elseif size_of_varargin(1,2) == 2
     %user is giving us a .m file and also a corresponding folder to save
     %it.Or the user is giving us a folder full of .m files and also giving
     %us a corresponding folder to save all those .m files. We check for
-    %both of them here. 
+    %both of them here.
     
     input_path = varargin{1};
     
     path_to_save_files = varargin{2};
     
-    is_m_file = strfind(input_path,'.m');%If an empty matrix is returned 
+    is_m_file = strfind(input_path,'.m');%If an empty matrix is returned
     %from this call, we can definitely say that it is a folder full of .m
     %files. If it returns a number we can say that it is a single file
     %which needs to be converted.
     
-    %We call the corresponding function to solve the problem. 
+    %We call the corresponding function to solve the problem.
     
     if isempty(is_m_file)
         
@@ -119,9 +119,13 @@ if size_of_varargin(1,2) == 1%If there is only one input, then the function
     
     [modified_code_array,function_counter,location_of_functions_in_array] = codeModifier(matlab_file_as_array);
     
-    modified_code_array = functionEnder(modified_code_array,location_of_functions_in_array,function_counter);
-    
-    modified_code_array = functionNameModifier(modified_code_array,matlab_function_name,location_of_functions_in_array);
+    if function_counter ~= 0
+        
+        modified_code_array = functionEnder(modified_code_array,location_of_functions_in_array,function_counter);
+        
+        modified_code_array = functionNameModifier(modified_code_array,matlab_function_name,location_of_functions_in_array);
+        
+    end
     
     size_of_modified_code_array = size(modified_code_array);
     %Size of the modified compatible octave code is needed to set up the
@@ -172,7 +176,11 @@ elseif size_of_varargin(1,2) == 2
         
         [modified_code_array,function_counter,location_of_functions_in_array] = codeModifier(matlab_file_as_array);
         
-        modified_code_array = functionEnder(modified_code_array,location_of_functions_in_array,function_counter);
+        if function_counter ~= 0
+            
+            modified_code_array = functionEnder(modified_code_array,location_of_functions_in_array,function_counter);
+            
+        end
         
         size_of_modified_code_array = size(modified_code_array);
         %Size of the modified compatible octave code is needed to set up the
@@ -199,7 +207,7 @@ end
 %fullFolderConverter function grabs the contents of the folder and finds
 %all the .m files using the built in dir function. Then it runs through the
 %loop sending each function to the singleFileConverter function with
-%corresponding inputs. 
+%corresponding inputs.
 
 function fullFolderConverter(varargin)
 
@@ -292,7 +300,7 @@ function output = functionNameModifier(input_array,function_name,location_of_fun
 
 %functionNameModifier function changes the name of the octave main
 %functions to prevent warnings from the octave interpreter because of name
-%mismatch. 
+%mismatch.
 
 modified_function_name = [function_name 'Octave'];
 
@@ -309,7 +317,7 @@ output = input_array;
 function output = functionEnder(input_array,location_of_functions,function_counter)
 
 %functionEnder puts the 'endfunction' closure on all the functions in an .m
-%file. 
+%file.
 
 size_of_input_array = size(input_array);
 
@@ -333,19 +341,19 @@ output = final_cell_array;
 function output = readFileLineByLine(path_to_file)
 
 %readFileLineByLine function reads any file and returns the contents of it
-%as a cell array with each line of the function as cell. 
+%as a cell array with each line of the function as cell.
 
 file_id = fopen(path_to_file);
 
 file_as_line_by_line_array = {};
 
-individual_line = fgetl(file_id);
+individual_line = fgets(file_id);
 
 file_as_line_by_line_array = [file_as_line_by_line_array ; individual_line];
 
 while ischar(individual_line)
     
-    individual_line = fgetl(file_id);
+    individual_line = fgets(file_id);
     file_as_line_by_line_array = [file_as_line_by_line_array ;individual_line];
     
 end
@@ -353,6 +361,20 @@ end
 fclose(file_id);
 
 file_as_line_by_line_array(end) = [];
+
+end_of_file = file_as_line_by_line_array{end};
+
+size_of_end_of_file = size(end_of_file);
+
+while size_of_end_of_file(1,2) == 2
+    
+    file_as_line_by_line_array(end) = [];
+    
+    end_of_file = file_as_line_by_line_array{end};
+    
+    size_of_end_of_file = size(end_of_file);
+    
+end
 
 output = file_as_line_by_line_array;
 
