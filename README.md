@@ -1,4 +1,4 @@
-Matlab To Octave Compiler
+Matlab To Octave Converter
 =============
 
 The converter can convert matlab .m files into octave compatible .m files. The current version is stable and can be downloaded and utilized.
