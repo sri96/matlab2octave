@@ -7,11 +7,14 @@ function [output,no_of_functions,location_of_functions] = codeModifier(input_str
 %using five subfunctions
 %
 %   removeTrailingWhiteSpace()
-%   ifModifier()
-%   forModifier()
-%   whileModifier()
-%   switchModifier()
-%
+%   functionSyntaxMatcher()
+%   ifSyntaxModifier()
+%   forSyntaxModifier()
+%   whileSyntaxModifier()
+%   switchSyntaxModifier()
+%   functionSyntaxModifier()-This is under development.The source code as
+%   it stands is given. It has been tested and proven to give unwanted
+%   results. So please refrain from using it. 
 %
 %The names are self explanatory of what those functions do. They just tweak
 %the corresponding matlab constructs to make them octave compatible. We
@@ -31,11 +34,17 @@ function [output,no_of_functions,location_of_functions] = codeModifier(input_str
 %
 %elseif bug fix was added to ifModifier() function to fix problems arising
 %from elseif statements present with in matlab's if conditional constructs.
-%(Added July 20,2012)
+%(Added July 20,2012) (Removed July 22,2012)
 %
 %isComment function was added as a bug fix to avoid parsing and replacing
 %'if','for','while' and switch statements contained with in comments.
 %(Added July 20,2012)
+%
+%All the functions have been re-written to fix lots of bugs that were
+%giving a lot of trouble.One bug has been left unfixed because the probablity of somebody encountering it is very low.
+%Please read the known issues section on our documentation to read more
+%about the bug and also about other issues for which solution is being
+%worked out. (Added July 22,2012)
 %
 %     Copyright (C) 2012  <Adhithya Rajasekaran>
 %
@@ -54,7 +63,7 @@ function [output,no_of_functions,location_of_functions] = codeModifier(input_str
 
 output = removeTrailingWhiteSpace(input_string_array);
 
-[no_of_functions,location_of_functions] = functionSyntaxMatcher(output)
+[no_of_functions,location_of_functions] = functionSyntaxMatcher(output);
 
 output = ifSyntaxModifier(output);
 
@@ -63,6 +72,11 @@ output = forSyntaxModifier(output);
 output = whileSyntaxModifier(output);
 
 output = switchSyntaxModifier(output);
+
+%output = functionSyntaxModifier(output);This feature is under development
+%specially for people who put 'end' at the last line of a function.If you
+%are one of those people,please don't use this converter because it will
+%completely mess your code up.
 
 
 %The following functions add syntax modifications to the matlab code to
@@ -74,30 +88,55 @@ function input_string_cell_array = ifSyntaxModifier(input_string_cell_array)
 
 size_of_input = size(input_string_cell_array);
 
-for x = 1:size_of_input(1,1)
+for x = 1:size_of_input(1,1)%For loop runs through the whole array
     
-    current_row = input_string_cell_array{x,1};
+    current_row = input_string_cell_array{x,1};%for each iteration one row
+    %is extracted from the array. We will use this to easily identify the
+    %corresponding constructs
     
-    replacement_string_1 = input_string_cell_array{x,1};
+    replacement_string_1 = input_string_cell_array{x,1};%this is a duplicate 
+    %step of the above statement. We will use this to actually tweak the
+    %constructs
     
-    current_row = strtrim(current_row);
+    current_row = strtrim(current_row);%The row is stripped off all the whitespaces
+    %both trailing and the ones at the starting of a string
     
-    if isComment(current_row) == 0
+    if isWholeLineComment(current_row) == 0%If the string is just a full line comment
+        %we can ignore it
         
-        current_row = commentlessString(current_row);
+        current_row = commentlessString(current_row);%this step removes inline
+        %comments from strings so that we can concentrate what will be
+        %executed
         
-        if_locator = strfind(current_row,'if');
+        if_locator = strfind(current_row,'if');%It searches through each row 
+        %to find out if it contains an if statement. This brings up some
+        %interesting things like words that contain 'if' like 'modified' as
+        %a possibility. The nest few steps will eliminate those false
+        %positives
         
         
-        if isempty(if_locator) == 0
+        if isempty(if_locator) == 0%If there is not if statement on a row, 
+            %we simply ignore it. 
             
-            [token,remain] = strtok(current_row);
+            [token,remain] = strtok(current_row);%If conditional construct 
+            %usually occurs at the start of a statement and is usually
+            %followed by a space.So we check for that below
             
-            if strcmp(token,'if')
+            if strcmp(token,'if')%It it matches our criteria we have found real
+                %if statements
                 
-                if_locator_2 = strfind(commentlessString(replacement_string_1),'if');
+                if_locator_2 = strfind(commentlessString(replacement_string_1),'if');%Now we use the duplicate string to find out the position of 
+                %if in a row.Position in a row is important because my
+                %function exploits matlab's auto align feature to tweak
+                %code.
                 
-                for y = x:size_of_input(1,1)
+                for y = x:size_of_input(1,1)%a for loop goes through the 
+                    %array to find a matching 'end' statement which has the
+                    %same alignment in the row and position. Once it has
+                    %found a match, it eliminates false positives through
+                    %the method used by if construct. Once it has decided
+                    %on the best fit, it appends 'if' to the 'end'
+                    %statement to make it octave compatible. 
                     
                     current_row_2 = input_string_cell_array{y,1};
                     
@@ -105,7 +144,7 @@ for x = 1:size_of_input(1,1)
                     
                     current_row_2 = strtrim(current_row_2);
                     
-                    if isComment(current_row) == 0
+                    if isWholeLineComment(current_row) == 0
                         
                         current_row_2 = commentlessString(current_row_2);
                         
@@ -147,6 +186,9 @@ for x = 1:size_of_input(1,1)
     
 end
 
+%All the below functions are replications of ifSyntaxModifier function to 
+%work on other constructs. 
+
 function input_string_cell_array = forSyntaxModifier(input_string_cell_array)
 
 size_of_input = size(input_string_cell_array);
@@ -159,7 +201,7 @@ for x = 1:size_of_input(1,1)
     
     current_row = strtrim(current_row);
     
-    if isComment(current_row) == 0
+    if isWholeLineComment(current_row) == 0
         
         current_row = commentlessString(current_row);
         
@@ -182,7 +224,7 @@ for x = 1:size_of_input(1,1)
                     
                     current_row_2 = strtrim(current_row_2);
                     
-                    if isComment(current_row) == 0
+                    if isWholeLineComment(current_row) == 0
                         
                         current_row_2 = commentlessString(current_row_2);
                         
@@ -236,7 +278,7 @@ for x = 1:size_of_input(1,1)
     
     current_row = strtrim(current_row);
     
-    if isComment(current_row) == 0
+    if isWholeLineComment(current_row) == 0
         
         current_row = commentlessString(current_row);
         
@@ -259,7 +301,7 @@ for x = 1:size_of_input(1,1)
                     
                     current_row_2 = strtrim(current_row_2);
                     
-                    if isComment(current_row) == 0
+                    if isWholeLineComment(current_row) == 0
                         
                         current_row_2 = commentlessString(current_row_2);
                         
@@ -314,7 +356,7 @@ for x = 1:size_of_input(1,1)
     
     current_row = strtrim(current_row);
     
-    if isComment(current_row) == 0
+    if isWholeLineComment(current_row) == 0
         
         current_row = commentlessString(current_row);
         
@@ -337,7 +379,7 @@ for x = 1:size_of_input(1,1)
                     
                     current_row_2 = strtrim(current_row_2);
                     
-                    if isComment(current_row) == 0
+                    if isWholeLineComment(current_row) == 0
                         
                         current_row_2 = commentlessString(current_row_2);
                         
@@ -391,7 +433,7 @@ for x = 1:size_of_input(1,1)
     
     current_row = strtrim(current_row);
     
-    if isComment(current_row) == 0
+    if isWholeLineComment(current_row) == 0
         
         current_row = commentlessString(current_row);
         
@@ -417,7 +459,84 @@ for x = 1:size_of_input(1,1)
     end 
     
     
-end 
+end
+
+function input_string_cell_array = functionSyntaxModifier(input_string_cell_array)
+
+size_of_input = size(input_string_cell_array);
+
+for x = 1:size_of_input(1,1)
+    
+    current_row = input_string_cell_array{x,1};
+    
+    replacement_string_1 = input_string_cell_array{x,1};
+    
+    current_row = strtrim(current_row);
+    
+    if isWholeLineComment(current_row) == 0
+        
+        current_row = commentlessString(current_row);
+        
+        function_locator = strfind(current_row,'function');
+        
+        
+        if isempty(function_locator) == 0
+            
+            [token,remain] = strtok(current_row);
+            
+            if strcmp(token,'function')
+                
+                function_locator_2 = strfind(commentlessString(replacement_string_1),'function');
+                
+                for y = x:size_of_input(1,1)
+                    
+                    current_row_2 = input_string_cell_array{y,1};
+                    
+                    replacement_string_2 = input_string_cell_array{y,1};
+                    
+                    current_row_2 = strtrim(current_row_2);
+                    
+                    if isWholeLineComment(current_row) == 0
+                        
+                        current_row_2 = commentlessString(current_row_2);
+                        
+                        end_locator = strfind(current_row_2,'end');
+                        
+                        if isempty(end_locator) == 0
+                            
+                            if strcmp(current_row_2,'end')
+                                
+                                end_locator_2 = strfind(commentlessString(replacement_string_2),'end');
+                                
+                                if function_locator_2 == end_locator_2
+                                    
+                                    replacement_string_2 = [replacement_string_2 'function'];
+                                    
+                                    input_string_cell_array{y,1} = replacement_string_2;
+                                    
+                                    break
+                                    
+                                end
+                                
+                            end
+                            
+                        end
+                        
+                    end
+                    
+                end
+                
+                
+            end
+            
+            
+            
+        end
+        
+        
+    end
+    
+end
 
 
 
@@ -438,7 +557,11 @@ for x  = 1:size_of_input(1,1)
 end
 
 
-function output = isComment(input_string)
+function output = isWholeLineComment(input_string)
+
+%isWholeLineComment function identifies comments by searching for the percentage
+%sign in the code. If it is found as the first character in the string,
+%then the function can tell that it is a comment. 
 
 input_string = strtrim(input_string);
 
@@ -464,6 +587,10 @@ end
 
 function output_string = commentlessString(input_string)
 
+%commentlessString function identifies inline comments and strips them to
+%return back executable code.This code is necessary to identify and
+%manipulate constructs. 
+
 comment_location = strfind(input_string,'%');
 
 parsableString = input_string;
@@ -475,6 +602,9 @@ if isempty(comment_location) == 0
 end
 
 output_string = parsableString;
+
+
+
 
 
 
