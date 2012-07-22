@@ -1,10 +1,10 @@
-function output = codeModifier(input_string_array)
+function [output,no_of_functions,location_of_functions] = codeModifier(input_string_array)
 
 %codeModifier(input_string_array) is the heart of the matlab2octave
 %converter because it converts the matlab code into octave compatible
 %code.Currently it only has limited capabilities because the conversion
 %process is straight forward from matlab to octave.It converts the code
-%using five subfunctions 
+%using five subfunctions
 %
 %   removeTrailingWhiteSpace()
 %   ifModifier()
@@ -33,269 +33,397 @@ function output = codeModifier(input_string_array)
 %from elseif statements present with in matlab's if conditional constructs.
 %(Added July 20,2012)
 %
+%isComment function was added as a bug fix to avoid parsing and replacing
+%'if','for','while' and switch statements contained with in comments.
+%(Added July 20,2012)
+%
 %     Copyright (C) 2012  <Adhithya Rajasekaran>
-% 
+%
 %     This program is free software: you can redistribute it and/or modify
 %     it under the terms of the GNU General Public License as published by
 %     the Free Software Foundation, either version 3 of the License, or
 %     (at your option) any later version.
-% 
+%
 %     This program is distributed in the hope that it will be useful,
 %     but WITHOUT ANY WARRANTY; without even the implied warranty of
 %     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 %     GNU General Public License for more details.
-% 
+%
 %     You should have received a copy of the GNU General Public License
 %     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 output = removeTrailingWhiteSpace(input_string_array);
 
-output = ifModifier(output);
+[no_of_functions,location_of_functions] = functionSyntaxMatcher(output)
 
-output = forModifier(output);
+output = ifSyntaxModifier(output);
 
-output = whileModifier(output);
+output = forSyntaxModifier(output);
 
-output = switchModifier(output);
+output = whileSyntaxModifier(output);
+
+output = switchSyntaxModifier(output);
+
 
 %The following functions add syntax modifications to the matlab code to
 %make it octave compatible.Please read the octave and matlab documentation
-%to know more about the syntax. 
+%to know more about the syntax.
 
 
-function output = ifModifier(input_array)
+function input_string_cell_array = ifSyntaxModifier(input_string_cell_array)
 
-%ifModifier(input_array) finds all the 'if' statments and their corresponding
-%'end' statements. Once it finds matching 'end' statements it converts them
-%into 'endif' statements. 
+size_of_input = size(input_string_cell_array);
 
-size_of_input = size(input_array);
-
-for x  = 1:size_of_input(1,1)
+for x = 1:size_of_input(1,1)
     
-    current_row = input_array(x,1);
+    current_row = input_string_cell_array{x,1};
     
-    if_locator = strfind(current_row,'if');
+    replacement_string_1 = input_string_cell_array{x,1};
     
+    current_row = strtrim(current_row);
     
-    cell_expansion = if_locator{1};
-    
-    if isempty(cell_expansion)
+    if isComment(current_row) == 0
         
-    else
+        current_row = commentlessString(current_row);
         
-        %Added to fix the elseif bug which was appending multiple ifs to
-        %the same end statements.(Added July 20,2012)
-        else_if_locator = strfind(current_row,'elseif');
+        if_locator = strfind(current_row,'if');
         
-        cell_expansion_2 = else_if_locator{1};
         
-        if isempty(cell_expansion_2)
+        if isempty(if_locator) == 0
             
+            [token,remain] = strtok(current_row);
             
-            for y = x:size_of_input(1,1)
+            if strcmp(token,'if')
                 
-                current_row_2 = input_array(y,1);
+                if_locator_2 = strfind(commentlessString(replacement_string_1),'if');
                 
-                end_locator = strfind(current_row_2,'end');
-                
-                cell_expansion_3 = end_locator{1};
-                
-                if isempty(cell_expansion_3) == 0
+                for y = x:size_of_input(1,1)
                     
-                    if cell_expansion(1,1) == cell_expansion_3(1,1)
+                    current_row_2 = input_string_cell_array{y,1};
+                    
+                    replacement_string_2 = input_string_cell_array{y,1};
+                    
+                    current_row_2 = strtrim(current_row_2);
+                    
+                    if isComment(current_row) == 0
                         
+                        current_row_2 = commentlessString(current_row_2);
                         
-                        if_code_modifier = current_row_2{1};
+                        end_locator = strfind(current_row_2,'end');
                         
-                        if_code_modifier = [if_code_modifier 'if'];
-                        
-                        current_row_2{1} = if_code_modifier;
-                        
-                        input_array(y,1) = current_row_2;
-                        
-                        break
+                        if isempty(end_locator) == 0
+                            
+                            if strcmp(current_row_2,'end')
+                                
+                                end_locator_2 = strfind(commentlessString(replacement_string_2),'end');
+                                
+                                if if_locator_2 == end_locator_2
+                                    
+                                    replacement_string_2 = [replacement_string_2 'if'];
+                                    
+                                    input_string_cell_array{y,1} = replacement_string_2;
+                                    
+                                    break
+                                    
+                                end
+                                
+                            end
+                            
+                        end
                         
                     end
                     
                 end
                 
+                
             end
             
+            
+            
         end
+        
         
     end
     
 end
 
-output = input_array;
+function input_string_cell_array = forSyntaxModifier(input_string_cell_array)
 
-%forModifier,whileModifier and switchModifier are reimplementations of
-%ifModifier modified with commands looking and replacing appropriate
-%constructs. 
+size_of_input = size(input_string_cell_array);
 
-function output = forModifier(input_array)
-
-size_of_input = size(input_array);
-
-for x  = 1:size_of_input(1,1)
+for x = 1:size_of_input(1,1)
     
-    current_row = input_array(x,1);
+    current_row = input_string_cell_array{x,1};
     
-    for_locator = strfind(current_row,'for');
+    replacement_string_1 = input_string_cell_array{x,1};
     
+    current_row = strtrim(current_row);
     
-    cell_expansion = for_locator{1};
-    
-    if isempty(cell_expansion)
+    if isComment(current_row) == 0
         
-    else
+        current_row = commentlessString(current_row);
+        
+        for_locator = strfind(current_row,'for');
         
         
-        for y = x:size_of_input(1,1)
+        if isempty(for_locator) == 0
             
-            current_row_2 = input_array(y,1);
+            [token,remain] = strtok(current_row);
             
-            end_locator = strfind(current_row_2,'end');
-            
-            cell_expansion_3 = end_locator{1};
-            
-            if isempty(cell_expansion_3) == 0
+            if strcmp(token,'for')
                 
-                if cell_expansion(1,1) == cell_expansion_3(1,1)
+                for_locator_2 = strfind(commentlessString(replacement_string_1),'for');
+                
+                for y = x:size_of_input(1,1)
                     
+                    current_row_2 = input_string_cell_array{y,1};
                     
-                    for_code_modifier = current_row_2{1};
+                    replacement_string_2 = input_string_cell_array{y,1};
                     
-                    for_code_modifier = [for_code_modifier 'for'];
+                    current_row_2 = strtrim(current_row_2);
                     
-                    current_row_2{1} = for_code_modifier;
-                    
-                    input_array(y,1) = current_row_2;
-                    
-                    break
+                    if isComment(current_row) == 0
+                        
+                        current_row_2 = commentlessString(current_row_2);
+                        
+                        end_locator = strfind(current_row_2,'end');
+                        
+                        if isempty(end_locator) == 0
+                            
+                            if strcmp(current_row_2,'end')
+                                
+                                end_locator_2 = strfind(commentlessString(replacement_string_2),'end');
+                                
+                                if for_locator_2 == end_locator_2
+                                    
+                                    replacement_string_2 = [replacement_string_2 'for'];
+                                    
+                                    input_string_cell_array{y,1} = replacement_string_2;
+                                    
+                                    break
+                                    
+                                end
+                                
+                            end
+                            
+                        end
+                        
+                    end
                     
                 end
                 
+                
             end
             
+            
+            
         end
+        
         
     end
     
 end
 
-output = input_array;
+function input_string_cell_array = whileSyntaxModifier(input_string_cell_array)
 
-function output = whileModifier(input_array)
+size_of_input = size(input_string_cell_array);
 
-size_of_input = size(input_array);
-
-for x  = 1:size_of_input(1,1)
+for x = 1:size_of_input(1,1)
     
-    current_row = input_array(x,1);
+    current_row = input_string_cell_array{x,1};
     
-    while_locator = strfind(current_row,'while');
+    replacement_string_1 = input_string_cell_array{x,1};
     
+    current_row = strtrim(current_row);
     
-    cell_expansion = while_locator{1};
-    
-    if isempty(cell_expansion)
+    if isComment(current_row) == 0
         
-    else
+        current_row = commentlessString(current_row);
+        
+        while_locator = strfind(current_row,'while');
         
         
-        for y = x:size_of_input(1,1)
+        if isempty(while_locator) == 0
             
-            current_row_2 = input_array(y,1);
+            [token,remain] = strtok(current_row);
             
-            end_locator = strfind(current_row_2,'end');
-            
-            cell_expansion_3 = end_locator{1};
-            
-            if isempty(cell_expansion_3) == 0
+            if strcmp(token,'while')
                 
-                if cell_expansion(1,1) == cell_expansion_3(1,1)
+                while_locator_2 = strfind(commentlessString(replacement_string_1),'while');
+                
+                for y = x:size_of_input(1,1)
                     
+                    current_row_2 = input_string_cell_array{y,1};
                     
-                    while_code_modifier = current_row_2{1};
+                    replacement_string_2 = input_string_cell_array{y,1};
                     
-                    while_code_modifier = [while_code_modifier 'while'];
+                    current_row_2 = strtrim(current_row_2);
                     
-                    current_row_2{1} = while_code_modifier;
-                    
-                    input_array(y,1) = current_row_2;
-                    
-                    break
+                    if isComment(current_row) == 0
+                        
+                        current_row_2 = commentlessString(current_row_2);
+                        
+                        end_locator = strfind(current_row_2,'end');
+                        
+                        if isempty(end_locator) == 0
+                            
+                            if strcmp(current_row_2,'end')
+                                
+                                end_locator_2 = strfind(commentlessString(replacement_string_2),'end');
+                                
+                                if while_locator_2 == end_locator_2
+                                    
+                                    replacement_string_2 = [replacement_string_2 'while'];
+                                    
+                                    input_string_cell_array{y,1} = replacement_string_2;
+                                    
+                                    break
+                                    
+                                end
+                                
+                            end
+                            
+                        end
+                        
+                    end
                     
                 end
                 
+                
             end
             
+            
+            
         end
+        
         
     end
     
 end
 
-output = input_array;
 
-function output = switchModifier(input_array)
+function input_string_cell_array = switchSyntaxModifier(input_string_cell_array)
 
-size_of_input = size(input_array);
+size_of_input = size(input_string_cell_array);
 
-for x  = 1:size_of_input(1,1)
+for x = 1:size_of_input(1,1)
     
-    current_row = input_array(x,1);
+    current_row = input_string_cell_array{x,1};
     
-    switch_locator = strfind(current_row,'switch');
+    replacement_string_1 = input_string_cell_array{x,1};
     
+    current_row = strtrim(current_row);
     
-    cell_expansion = switch_locator{1};
-    
-    if isempty(cell_expansion)
+    if isComment(current_row) == 0
         
-    else
+        current_row = commentlessString(current_row);
+        
+        switch_locator = strfind(current_row,'switch');
         
         
-        for y = x:size_of_input(1,1)
+        if isempty(switch_locator) == 0
             
-            current_row_2 = input_array(y,1);
+            [token,remain] = strtok(current_row);
             
-            end_locator = strfind(current_row_2,'end');
-            
-            cell_expansion_3 = end_locator{1};
-            
-            if isempty(cell_expansion_3) == 0
+            if strcmp(token,'switch')
                 
-                if cell_expansion(1,1) == cell_expansion_3(1,1)
+                switch_locator_2 = strfind(commentlessString(replacement_string_1),'switch');
+                
+                for y = x:size_of_input(1,1)
                     
+                    current_row_2 = input_string_cell_array{y,1};
                     
-                    switch_code_modifier = current_row_2{1};
+                    replacement_string_2 = input_string_cell_array{y,1};
                     
-                    switch_code_modifier = [switch_code_modifier 'switch'];
+                    current_row_2 = strtrim(current_row_2);
                     
-                    current_row_2{1} = switch_code_modifier;
-                    
-                    input_array(y,1) = current_row_2;
-                    
-                    break
+                    if isComment(current_row) == 0
+                        
+                        current_row_2 = commentlessString(current_row_2);
+                        
+                        end_locator = strfind(current_row_2,'end');
+                        
+                        if isempty(end_locator) == 0
+                            
+                            if strcmp(current_row_2,'end')
+                                
+                                end_locator_2 = strfind(commentlessString(replacement_string_2),'end');
+                                
+                                if switch_locator_2 == end_locator_2
+                                    
+                                    replacement_string_2 = [replacement_string_2 'switch'];
+                                    
+                                    input_string_cell_array{y,1} = replacement_string_2;
+                                    
+                                    break
+                                    
+                                end
+                                
+                            end
+                            
+                        end
+                        
+                    end
                     
                 end
                 
+                
             end
             
+            
+            
         end
+        
         
     end
     
 end
 
-output = input_array;
+function [function_counter,function_location] = functionSyntaxMatcher(input_string_cell_array)
 
-%removeTrailingWhiteSpace function is self explanatory. 
+size_of_input = size(input_string_cell_array);
 
-function output = removeTrailingWhiteSpace(input_array)
+function_counter = 0;
+
+for x = 1:size_of_input(1,1)
+    
+    current_row = input_string_cell_array{x,1};
+    
+    current_row = strtrim(current_row);
+    
+    if isComment(current_row) == 0
+        
+        current_row = commentlessString(current_row);
+        
+        function_locator = strfind(current_row,'function');
+        
+        
+        if isempty(function_locator) == 0
+            
+            [token,remain] = strtok(current_row);
+            
+            if strcmp(token,'function')
+                
+               function_counter = function_counter + 1;
+            
+               function_location(function_counter,1) = x;
+                
+                
+            end 
+            
+        end 
+        
+        
+    end 
+    
+    
+end 
+
+
+
+%removeTrailingWhiteSpace function is self explanatory.
+
+function input_array = removeTrailingWhiteSpace(input_array)
 
 size_of_input = size(input_array);
 
@@ -307,9 +435,61 @@ for x  = 1:size_of_input(1,1)
     
     input_array(x,1) = current_row;
     
-end 
+end
 
-output = input_array;
+
+function output = isComment(input_string)
+
+input_string = strtrim(input_string);
+
+comment_finder = strfind(input_string,'%');
+
+if isempty(comment_finder) == 0
+    
+    if comment_finder == 1
+        
+        output = 1;
+        
+    else
+        
+        output = 0;
+        
+    end
+    
+else
+    
+    output = 0;
+    
+end
+
+function output_string = commentlessString(input_string)
+
+comment_location = strfind(input_string,'%');
+
+parsableString = input_string;
+
+if isempty(comment_location) == 0
+    
+    parsableString = input_string(1:comment_location-1);
+    
+end
+
+output_string = parsableString;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
