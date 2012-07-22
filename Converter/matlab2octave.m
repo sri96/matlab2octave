@@ -6,70 +6,6 @@ function matlab2octave(varargin)
 %The function has been implemented in two versions using the builtin varargin
 %command for user convenience.
 %
-%First version:
-%
-%   matlab2octave(path_to_matlab_file)
-%
-%   You just pass in the path of a matlab .m file. The function currently
-%   supports both scripts and functions. Functions cannot have nested
-%   functions in them because octave doesn't support nested functions as of
-%   the latest release. If you sub functions with in a function, that would
-%   be fine. The converter reads in the .m file as a txt file.It creates a
-%   new octave .m file in the same directory with the same name as the passed in matlab .m file
-%   and appends 'Octave' to the name to avoid over writing.
-%
-%       For Example: matlab2octave('C:\User\Joe\sampleMatlab.m') creates a
-%       new octave .m file in the C:\User\Joe\ directory named
-%       sampleMatlabOctave.m.
-%
-%   After creating the output octave file, it converts the matlab code to
-%   compatible octave code and writes it to the created octave file.
-%   Formatting is in no way disturbed. Comments are also left untouched.
-%   This is the easiest way to convert matlab .m file to octave .m file.
-%
-%
-%Second Version:
-%
-%   matlab2octave(path_to_matlab_file,path_to_save_octave_file)
-%
-%   You have to pass in the path of a matlab .m file and also the path to
-%   save the octave .m file. The function currently
-%   supports both scripts and functions. Functions cannot have nested
-%   functions in them because octave doesn't support nested functions as of
-%   the latest release. If you sub functions with in a function, that would
-%   be fine. The function reads in the matlab .m file and creates an octave
-%   .m file in the specified path with the same name as the passed in
-%   matlab file.
-%
-%       For Example: matlab2octave('C:\User\Joe\sampleMatlab.m','C:\User\Joe\SomeFolder\') creates a
-%       new octave .m file in the C:\User\Joe\SomeFolder\ directory named
-%       sampleMatlab.m.
-%
-%   The converter assumes that path_to_matlab_file and path_to_save_octave_file
-%   are different. If you provide the same directory for both the paths,
-%   then it will result in overwriting of your matlab .m file. After creating
-%   the output octave file, it converts the matlab code to
-%   compatible octave code and writes it to the created octave file.
-%   Formatting is in no way disturbed. Comments are also left untouched.
-%
-%
-%
-%This function and its dependencies are under consistent development.So you
-%can grab the latest version of the package from https://github.com/adhithyan15/matlab2octave
-%
-%Please note that matlab browser is limited in its flexibility and functionality. So please
-%copy paste the urls on your browser(Chrome,Mozilla,IE,Safari) to view the documentation and also to
-%grab the latest version of the source code.
-%
-%The function needs the following .m files to run properly
-%
-%   codeModifier.m
-%   functionNameExtractor.m
-%   pathExtractor.m
-%
-%Please make sure that those files are in your path while running this
-%function.
-%
 %
 %     Copyright (C) 2012  <Adhithya Rajasekaran>
 %
@@ -85,6 +21,70 @@ function matlab2octave(varargin)
 %
 %     You should have received a copy of the GNU General Public License
 %     along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+size_of_varargin = size(varargin);
+
+if size_of_varargin(1,2) == 1
+    %If the user is giving one input, then there are two possibilites. One
+    %is it might be an .m file or it must be a folder full of .m files. So
+    %we check for it here.
+    
+    input_path = varargin{1};
+    
+    is_m_file = strfind(input_path,'.m');%If an empty matrix is returned 
+    %from this call, we can definitely say that it is a folder full of .m
+    %files. If it returns a number we can say that it is a single file
+    %which needs to be converted.
+    
+    if isempty(is_m_file)
+        
+        fullFolderConverter(input_path);
+        
+        
+    else
+        
+        singleFileConverter(input_path);
+        
+        
+    end
+    
+elseif size_of_varargin(1,2) == 2
+    %If two inputs are given, then there are two possibilities. One is, the
+    %user is giving us a .m file and also a corresponding folder to save
+    %it.Or the user is giving us a folder full of .m files and also giving
+    %us a corresponding folder to save all those .m files. We check for
+    %both of them here. 
+    
+    input_path = varargin{1};
+    
+    path_to_save_files = varargin{2};
+    
+    is_m_file = strfind(input_path,'.m');%If an empty matrix is returned 
+    %from this call, we can definitely say that it is a folder full of .m
+    %files. If it returns a number we can say that it is a single file
+    %which needs to be converted.
+    
+    %We call the corresponding function to solve the problem. 
+    
+    if isempty(is_m_file)
+        
+        fullFolderConverter(input_path,path_to_save_files);
+        
+        
+        
+    else
+        
+        singleFileConverter(input_path,path_to_save_files);
+        
+        
+        
+    end
+    
+end
+
+
+
+function singleFileConverter(varargin)
 
 size_of_varargin = size(varargin);%Size of the varargin is needed to direct
 %the function to run either the one input version or the two input version.
@@ -136,7 +136,7 @@ if size_of_varargin(1,2) == 1%If there is only one input, then the function
     
     fclose(octave_file_handle);
     
-   
+    
     
     
 elseif size_of_varargin(1,2) == 2
@@ -152,43 +152,147 @@ elseif size_of_varargin(1,2) == 2
         
     end
     
-    matlab_function_name = functionNameExtractor(path_to_matlab_file);
-    
-    output_octave_file_name = [path_to_save_octave_file '\' matlab_function_name '.m'];
-    
-    octave_file_handle = fopen(output_octave_file_name,'w');
-    
-    matlab_file_as_array = readFileLineByLine(path_to_matlab_file);
-    
-    [modified_code_array,function_counter,location_of_functions_in_array] = codeModifier(matlab_file_as_array);
-    
-    modified_code_array = functionEnder(modified_code_array,location_of_functions_in_array,function_counter);
-    
-    size_of_modified_code_array = size(modified_code_array);
-    %Size of the modified compatible octave code is needed to set up the
-    %looping constructs.
-    
-    for n = 1:size_of_modified_code_array
+    if strcmpi(pathExtractor(path_to_matlab_file),path_to_save_octave_file) == 0
         
-        fprintf(octave_file_handle,'%s\n',modified_code_array{n});
+        
+        
+        if exist(path_to_save_octave_file,'dir') == 0
+            
+            mkdir(path_to_save_octave_file);
+            
+        end
+        
+        matlab_function_name = functionNameExtractor(path_to_matlab_file);
+        
+        output_octave_file_name = [path_to_save_octave_file '\' matlab_function_name '.m'];
+        
+        octave_file_handle = fopen(output_octave_file_name,'w');
+        
+        matlab_file_as_array = readFileLineByLine(path_to_matlab_file);
+        
+        [modified_code_array,function_counter,location_of_functions_in_array] = codeModifier(matlab_file_as_array);
+        
+        modified_code_array = functionEnder(modified_code_array,location_of_functions_in_array,function_counter);
+        
+        size_of_modified_code_array = size(modified_code_array);
+        %Size of the modified compatible octave code is needed to set up the
+        %looping constructs.
+        
+        for n = 1:size_of_modified_code_array
+            
+            fprintf(octave_file_handle,'%s\n',modified_code_array{n});
+            
+        end
+        
+        
+        fclose(octave_file_handle);
+        
+    else
+        
+        singleFileConverter(path_to_matlab_file);
         
     end
     
     
-    fclose(octave_file_handle);
-    
-          
 end
+
+%fullFolderConverter function grabs the contents of the folder and finds
+%all the .m files using the built in dir function. Then it runs through the
+%loop sending each function to the singleFileConverter function with
+%corresponding inputs. 
+
+function fullFolderConverter(varargin)
+
+size_of_varargin = size(varargin);
+
+if size_of_varargin(1,2) == 1
+    
+    path_to_directory = varargin{1};
+    
+    if path_to_directory(end) == '\'
+        
+        path_to_directory = path_to_directory(1:end-1);
+        
+    end
+    
+    directory_listing = dir(path_to_directory);
+    
+    size_of_directory_listing = size(directory_listing);
+    
+    for x = 3:size_of_directory_listing(1,1)
+        
+        current_file = directory_listing(x).name;
+        
+        is_m_file = strfind(current_file,'.m');
+        
+        if isempty(is_m_file) == 0
+            
+            path_to_file = [path_to_directory '\' current_file];
+            
+            singleFileConverter(path_to_file);
+            
+        end
+        
+        
+    end
+    
+elseif size_of_varargin(1,2) == 2
+    
+    
+    path_to_directory = varargin{1};
+    
+    path_to_save_files_directory = varargin{2};
+    
+    if path_to_directory(end) == '\'
+        
+        path_to_directory = path_to_directory(1:end-1);
+        
+    end
+    
+    if strcmpi(path_to_directory,path_to_save_files_directory) == 0
+        
+        if exist(path_to_save_files_directory,'dir') == 0
+            
+            mkdir(path_to_save_files_directory);
+            
+        end
+        
+        directory_listing = dir(path_to_directory);
+        
+        size_of_directory_listing = size(directory_listing);
+        
+        for x = 3:size_of_directory_listing(1,1)
+            
+            current_file = directory_listing(x).name;
+            
+            is_m_file = strfind(current_file,'.m');
+            
+            if isempty(is_m_file) == 0
+                
+                path_to_file = [path_to_directory '\' current_file];
+                
+                singleFileConverter(path_to_file,path_to_save_files_directory);
+                
+            end
+            
+            
+        end
+        
+    else
+        
+        fullFolderConverter(path_to_directory);
+        
+    end
+    
+end
+
 
 
 function output = functionNameModifier(input_array,function_name,location_of_functions_in_array)
 
-%The following function is a reimplementation of the findAndLocateFunction
-%function with slight changes. Instead of looking for all the functions it
-%just looks for the first function because it is the main function.It
-%changes the name of it by appending 'Octave' to the end of it to avoid
-%warnings when executed in Octave.This function is applicable only to the
-%first version of matlab2octave implementation.
+%functionNameModifier function changes the name of the octave main
+%functions to prevent warnings from the octave interpreter because of name
+%mismatch. 
 
 modified_function_name = [function_name 'Octave'];
 
@@ -204,9 +308,12 @@ output = input_array;
 
 function output = functionEnder(input_array,location_of_functions,function_counter)
 
+%functionEnder puts the 'endfunction' closure on all the functions in an .m
+%file. 
+
 size_of_input_array = size(input_array);
 
-location_of_functions = [location_of_functions;size_of_input_array(1,1)];
+location_of_functions = [location_of_functions;size_of_input_array(1,1)+1];
 
 final_cell_array = {};
 
@@ -224,6 +331,9 @@ output = final_cell_array;
 
 
 function output = readFileLineByLine(path_to_file)
+
+%readFileLineByLine function reads any file and returns the contents of it
+%as a cell array with each line of the function as cell. 
 
 file_id = fopen(path_to_file);
 
