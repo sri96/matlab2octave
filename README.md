@@ -6,3 +6,5 @@ The compiler can compile matlab .m files into octave compatible .m files. The cu
 Please read the documentation at https://github.com/adhithyan15/matlab2octave/wiki/Documentation to know more about the function. 
 
 The project is released under General Public License Version 3. 
+
+Authors: Adhithya Rajasekaran and Sri Madhavi Rajasekaran
